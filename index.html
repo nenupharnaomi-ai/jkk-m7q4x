@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>次元上昇家計簿</title>
+<meta name="theme-color" content="#e8b923">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="次元上昇家計簿">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{--bg:#fffaf0;--card:#fff;--ink:#4a3f35;--sub:#9a8c7e;--accent:#e8b923;--line:#f0e6d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;line-height:1.6}
+.wrap{max-width:480px;margin:0 auto;padding:16px 16px 80px}
+h1{font-size:22px;text-align:center;margin:8px 0 0;letter-spacing:.08em}
+.tag{text-align:center;color:var(--sub);font-size:13px;margin:0 0 16px}
+.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(180,150,90,.12)}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tabs button{flex:1;padding:10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:15px}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px}
+input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fffdf8;color:var(--ink)}
+.loves{display:flex;flex-wrap:wrap;gap:8px}
+.love{padding:8px 12px;border-radius:999px;border:2px solid var(--c);background:#fff;color:var(--ink);font-size:14px}
+.love.on{background:var(--c);color:#fff}
+.thanks{width:100%;margin-top:16px;padding:14px;border:0;border-radius:999px;background:var(--accent);color:#fff;font-size:17px;letter-spacing:.1em}
+.msg{text-align:center;min-height:24px;color:#c48a00;margin-top:10px;font-size:14px}
+.month{display:flex;justify-content:space-between;align-items:center}
+.month button{border:0;background:none;font-size:20px;color:var(--sub);padding:4px 10px}
+.total{text-align:center;font-size:14px;color:var(--sub)}
+.total b{display:block;font-size:26px;color:var(--ink)}
+.bar{margin:8px 0}
+.bar .t{display:flex;justify-content:space-between;font-size:14px}
+.bar .g{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.bar .g i{display:block;height:100%;background:var(--c)}
+.item{display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--line);padding:8px 0;font-size:14px}
+.item small{color:var(--sub)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:2px}
+.del{border:0;background:none;color:var(--sub);font-size:16px}
+.empty{color:var(--sub);text-align:center;font-size:14px}
+.wrap{padding-top:calc(16px + env(safe-area-inset-top))}
+.keep h2{font-size:15px;margin:0 0 4px}
+.keep p{font-size:13px;color:var(--sub);margin:0 0 10px}
+.keep .row{display:flex;gap:8px}
+.keep button{flex:1;padding:10px;border-radius:999px;border:1px solid var(--accent);background:#fff;color:var(--ink);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>次元上昇家計簿</h1>
+  <p class="tag">毎日の生活を、次元上昇に💕</p>
+
+  <div class="card">
+    <div class="tabs">
+      <button id="tOut" class="on">贈る愛</button>
+      <button id="tIn">受け取る愛</button>
+    </div>
+    <label>日付</label><input type="date" id="date">
+    <label>なにに</label><input id="what" placeholder="例：スーパー">
+    <label>金額（円）</label><input id="amt" type="number" inputmode="numeric" placeholder="2300">
+    <label>なにへの愛？（いくつ選んでもOK）</label>
+    <div class="loves" id="loves"></div>
+    <button class="thanks" id="save">ありがとう</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="card">
+    <div class="month"><button id="prev">‹</button><b id="mLabel"></b><button id="next">›</button></div>
+    <div class="total" id="totals"></div>
+    <div id="bars"></div>
+  </div>
+
+  <div class="card"><div id="list"></div></div>
+
+  <div class="card keep">
+    <h2>記録のお守り</h2>
+    <p>記録はこのスマホの中だけにあります。ときどき「とっておく」を押すと、機種変更のときも「もどす」で戻せます。</p>
+    <div class="row"><button id="exp">とっておく</button><button id="imp">もどす</button></div>
+    <input type="file" id="impFile" accept=".json,application/json" style="display:none">
+  </div>
+</div>
+<script>
+const LOVES=[
+ ["体への愛","#f29c9c"],["家族への愛","#f4b183"],["大切な人への愛","#f7cf5a"],["環境への愛","#9fd18b"],
+ ["芸術への愛","#7fc6d9"],["仕事への愛","#8fa8e0"],["美への愛","#c79be0"],["目醒めへの愛","#e08fc1"]];
+const color=n=>(LOVES.find(l=>l[0]===n)||["","#ccc"])[1];
+let kind="out",picked=new Set(),view=new Date();
+let data=[];try{data=JSON.parse(localStorage.getItem("jkk")||"[]")}catch(e){}
+const store=()=>{try{localStorage.setItem("jkk",JSON.stringify(data))}catch(e){}};
+const $=id=>document.getElementById(id);
+const yen=n=>Math.round(n).toLocaleString()+"円";
+{const t=new Date();$("date").value=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");}
+
+const EXTRA=["#f6a5c0","#ffb36b","#b5d96a","#6ccfc0","#7fa7f0","#b48ce8","#e8a07a","#d4b04a"];
+try{JSON.parse(localStorage.getItem("jkk_loves")||"[]").forEach(l=>LOVES.push(l))}catch(e){}
+const BASE=8;
+let paint=false,COLORS={};
+try{COLORS=JSON.parse(localStorage.getItem("jkk_colors")||"{}")}catch(e){}
+LOVES.forEach(l=>{if(COLORS[l[0]])l[1]=COLORS[l[0]]});
+const picker=document.createElement("input");picker.type="color";picker.style.cssText="position:absolute;opacity:0;width:0;height:0";document.body.appendChild(picker);
+function drawLoves(){
+ $("loves").innerHTML="";
+ LOVES.forEach(([n,c],i)=>{const b=document.createElement("button");b.className="love"+(picked.has(n)?" on":"");b.textContent=n;b.style.setProperty("--c",c);
+  b.onclick=()=>{
+   if(paint){picker.value=LOVES[i][1];picker.oninput=()=>{LOVES[i][1]=picker.value;COLORS[n]=picker.value;b.style.setProperty("--c",picker.value)};
+    picker.onchange=()=>{try{localStorage.setItem("jkk_colors",JSON.stringify(COLORS))}catch(e){}saveLoves();render()};picker.click();return}
+   picked.has(n)?picked.delete(n):picked.add(n);b.classList.toggle("on")};
+  if(i>=BASE){const x=document.createElement("span");x.textContent=" ×";x.style.opacity=".6";
+   x.onclick=e=>{e.stopPropagation();if(confirm("「"+n+"」をはずしますか？（記録は残ります）")){LOVES.splice(i,1);picked.delete(n);saveLoves();drawLoves()}};b.appendChild(x)}
+  $("loves").appendChild(b)});
+ const add=document.createElement("button");add.className="love";add.style.setProperty("--c","#d9cbb5");add.style.borderStyle="dashed";add.textContent="＋ 私の愛をふやす";
+ add.onclick=()=>{let n=(prompt("どんな愛ですか？（例：オペラ）")||"").trim();if(!n)return;if(!n.endsWith("愛"))n+="への愛";
+  if(LOVES.some(l=>l[0]===n)){alert("もうあります");return}
+  LOVES.push([n,EXTRA[(LOVES.length-BASE)%EXTRA.length]]);picked.add(n);saveLoves();drawLoves()};
+ $("loves").appendChild(add);
+ const pb=document.createElement("button");pb.className="love"+(paint?" on":"");pb.style.setProperty("--c","#bfa98a");pb.style.borderStyle="dashed";
+ pb.textContent=paint?"彩りえらび中（終わる）":"彩りをかえる";
+ pb.onclick=()=>{paint=!paint;drawLoves();$("msg").textContent=paint?"色をかえたい愛を、押してください":""};
+ $("loves").appendChild(pb);
+}
+function saveLoves(){try{localStorage.setItem("jkk_loves",JSON.stringify(LOVES.slice(BASE)))}catch(e){}}
+drawLoves();
+
+$("tOut").onclick=()=>{kind="out";$("tOut").classList.add("on");$("tIn").classList.remove("on")};
+$("tIn").onclick=()=>{kind="in";$("tIn").classList.add("on");$("tOut").classList.remove("on")};
+
+const WORDS=["受け取った愛に、ありがとう","この支払いも、愛のしるし","今日も満たされています","愛がめぐっています✨"];
+$("save").onclick=()=>{
+ const amt=+$("amt").value;
+ if(!amt){$("msg").textContent="金額を入れてくださいね";return}
+ if(!picked.size){$("msg").textContent="なにへの愛か、選んでくださいね";return}
+ data.push({id:Date.now(),date:$("date").value,what:$("what").value||"（なし）",amt,kind,loves:[...picked]});
+ store();
+ const n=picked.size;
+ $("msg").textContent=(n>1?["","","二重奏","三重奏","四重奏","五重奏"][n]||n+"重奏":"")+(n>1?"の愛 💕 ":"")+WORDS[Math.floor(Math.random()*WORDS.length)];
+ $("what").value="";$("amt").value="";picked.clear();document.querySelectorAll(".love").forEach(b=>b.classList.remove("on"));
+ view=new Date($("date").value);render();
+};
+$("prev").onclick=()=>{view.setMonth(view.getMonth()-1);render()};
+$("next").onclick=()=>{view.setMonth(view.getMonth()+1);render()};
+
+function render(){
+ const ym=view.getFullYear()+"-"+String(view.getMonth()+1).padStart(2,"0");
+ $("mLabel").textContent=view.getFullYear()+"年"+(view.getMonth()+1)+"月";
+ const rows=data.filter(d=>d.date.startsWith(ym));
+ const out=rows.filter(d=>d.kind==="out"),inn=rows.filter(d=>d.kind==="in");
+ const sum=a=>a.reduce((s,d)=>s+d.amt,0);
+ $("totals").innerHTML=`贈る愛<b>${yen(sum(out))}</b>受け取る愛 ${yen(sum(inn))}`;
+ const per={};out.forEach(d=>d.loves.forEach(l=>per[l]=(per[l]||0)+d.amt/d.loves.length));
+ const max=Math.max(1,...Object.values(per));
+ const shown=[...LOVES];Object.keys(per).forEach(n=>{if(!shown.some(l=>l[0]===n))shown.push([n,"#ccc"])});
+ $("bars").innerHTML=shown.filter(([n])=>per[n]).map(([n,c])=>
+  `<div class="bar" style="--c:${c}"><div class="t"><span>${n}</span><span>${yen(per[n])}</span></div><div class="g"><i style="width:${per[n]/max*100}%"></i></div></div>`).join("")
+  ||'<p class="empty">ここに、今月の愛の彩りが出ます</p>';
+ $("list").innerHTML=rows.sort((a,b)=>b.date.localeCompare(a.date)).map(d=>
+  `<div class="item"><div>${d.date.slice(5).replace("-","/")}　${esc(d.what)}<br><small>${d.loves.map(l=>`<span class="dot" style="--c:${color(l)}"></span>${l}`).join("　")}</small></div>
+  <div>${d.kind==="in"?"＋":""}${yen(d.amt)} <button class="del" data-id="${d.id}">×</button></div></div>`).join("")
+  ||'<p class="empty">まだ記録はありません</p>';
+ document.querySelectorAll(".del").forEach(b=>b.onclick=()=>{if(confirm("この記録を消しますか？")){data=data.filter(d=>d.id!=b.dataset.id);store();render()}});
+}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+render();
+
+// 記録のお守り（とっておく・もどす）
+$("exp").onclick=async()=>{
+ const pack={app:"jigen-kakeibo",v:1,saved:new Date().toISOString(),data,loves:LOVES.slice(BASE),colors:COLORS};
+ const name="次元上昇家計簿_"+new Date().toISOString().slice(0,10)+".json";
+ const file=new File([JSON.stringify(pack)],name,{type:"application/json"});
+ try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"次元上昇家計簿の記録"});return}}catch(e){if(e.name==="AbortError")return}
+ const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$("imp").onclick=()=>$("impFile").click();
+$("impFile").onchange=e=>{
+ const f=e.target.files[0];if(!f)return;
+ const r=new FileReader();
+ r.onload=()=>{
+  try{
+   const p=JSON.parse(r.result);
+   if(p.app!=="jigen-kakeibo"||!Array.isArray(p.data))throw 0;
+   if(!confirm("とっておいた記録（"+p.data.length+"件）に入れかえますか？"))return;
+   data=p.data;store();
+   try{localStorage.setItem("jkk_loves",JSON.stringify(p.loves||[]));localStorage.setItem("jkk_colors",JSON.stringify(p.colors||{}))}catch(e){}
+   location.reload();
+  }catch(x){alert("このファイルは読めませんでした")}
+ };
+ r.readAsText(f);e.target.value="";
+};
+
+if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
+ navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>
